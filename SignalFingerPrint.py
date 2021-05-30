@@ -9,6 +9,9 @@ import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QDialog,QApplication,QFileDialog
 from PyQt5.uic import loadUi
+import os
+from scipy.io import wavfile
+from scipy.signal import spectrogram
 
 
 class Ui_MainWindow( QDialog):
@@ -79,6 +82,12 @@ class Ui_MainWindow( QDialog):
         item.setText(_translate("MainWindow", "             Song-Name                  Similarity-Index"))
         self.Mix_Button.setText(_translate("MainWindow", "Mix"))
 
+ #file iteration
+def folderSongsPaths(filePath):
+    songsPaths=[]
+    for file in os.listdir(filePath):
+        songsPaths.append(os.path.join(path,file))
+    return songsPaths
 
 if __name__ == "__main__":
     import sys
