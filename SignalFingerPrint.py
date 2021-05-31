@@ -12,10 +12,20 @@ from PyQt5.uic import loadUi
 import os
 from scipy.io import wavfile
 from scipy.signal import spectrogram
-
+import librosa
+import matplotlib.pyplot as plt
+import PIL as Image
+import imagehash
+from imagehash import hex_to_hash
 
 class Ui_MainWindow( QDialog):
     def setupUi(self, MainWindow):
+        self.filePath='D:\SongsFile'
+        self.listSongsPaths=[]
+        self.spectograms=[]
+        self.data=[]
+        self.SampleRateList=[]
+        self.featuresList=[[]]
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(685, 405)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -61,9 +71,10 @@ class Ui_MainWindow( QDialog):
         MainWindow.setStatusBar(self.statusbar)
         self.Song1_Browse.clicked.connect(lambda:self.browsefiles(self.Song1_Browse))
         self.Song2_Browse.clicked.connect(lambda:self.browsefiles(self.Song2_Browse))
-
+        self.Mix_Button.clicked.connect(self.reading_and_hashing)
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+       
         
     def browsefiles(self,button):
         fname=QFileDialog.getOpenFileName(self, 'Open file','C:/')
@@ -71,7 +82,44 @@ class Ui_MainWindow( QDialog):
             self.Song1_FileName.setText(fname[0])
         else:
             self.Song2_FileName.setText(fname[0])
+   
+    #file iteration
+    def folderSongsPaths(self):
+        for song in os.listdir(self.filePath):
+            self.listSongsPaths.append(os.path.join(self.filePath,song))
+        return 0
 
+    
+    def creatingSongsSpectrogram(self):
+        self.folderSongsPaths() 
+        print(self.listSongsPaths)
+        print(len(self.listSongsPaths))
+        for song in self.listSongsPaths:
+            sampleRate,data1=wavfile.read(song)
+            self.SampleRateList.append(sampleRate)
+            print('11111111111')
+            if len(data1)>60*sampleRate:
+                data1=data1[0:60*sampleRate]
+            self.data.append(data1)    
+            frequency,time,spectro= spectrogram(data1,sampleRate)
+            self.spectograms.append(spectro)
+
+    def extractFeatures(self):
+        for i in range(len(self.SampleRateList)):
+            features=[librosa.feature.melspectrogram(y=self.data[i],S=self.spectograms[i],sr=self.SampleRateList[i],window='hann'), librosa.feature.mfcc(y=self.data[i].astype('float64'),sr=self.SampleRateList[i]),librosa.feature.chroma_stft(y=self.data[i],S=self.spectograms[i],sr=self.SampleRateList[i],window='hann')]                   
+            self.featuresList.append(features)
+            features=[]
+        print('features ',self.featuresList)
+        return 0
+
+    #def hashingFunction(self):
+
+    def reading_and_hashing(self):
+        self.creatingSongsSpectrogram()
+        print('1')
+
+        self.extractFeatures()
+        print('2')
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -82,12 +130,7 @@ class Ui_MainWindow( QDialog):
         item.setText(_translate("MainWindow", "             Song-Name                  Similarity-Index"))
         self.Mix_Button.setText(_translate("MainWindow", "Mix"))
 
- #file iteration
-def folderSongsPaths(filePath):
-    songsPaths=[]
-    for file in os.listdir(filePath):
-        songsPaths.append(os.path.join(path,file))
-    return songsPaths
+
 
 if __name__ == "__main__":
     import sys
@@ -97,4 +140,7 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
+
+
+
 
