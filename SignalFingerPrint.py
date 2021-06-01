@@ -10,6 +10,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QDialog,QApplication,QFileDialog
 from PyQt5.uic import loadUi
 import os
+from numpy import disp, float16
 from scipy.io import wavfile
 from scipy.signal import spectrogram
 import librosa
@@ -17,15 +18,29 @@ import matplotlib.pyplot as plt
 import PIL as Image
 import imagehash
 from imagehash import hex_to_hash
+import glob
+from glob import glob
+import librosa.display
+
+from PIL import Image
+import imagehash
+from imagehash import hex_to_hash
+import numpy as np
+
+
 
 class Ui_MainWindow( QDialog):
     def setupUi(self, MainWindow):
-        self.filePath='D:\SongsFile'
+        self.filePath='./Songs_wav/'
         self.listSongsPaths=[]
         self.spectograms=[]
         self.data=[]
         self.SampleRateList=[]
-        self.featuresList=[[]]
+        self.featuresList=[]
+        self.feature2=[]
+        self.feature3=[]
+        self.spectroHashList=[]
+        self.featureHashList1=[]
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(685, 405)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -88,6 +103,10 @@ class Ui_MainWindow( QDialog):
         for song in os.listdir(self.filePath):
             self.listSongsPaths.append(os.path.join(self.filePath,song))
         return 0
+    
+    def Hash(self,data)->str:
+        image=Image.fromarray(data)
+        return imagehash.phash(image, hash_size=16)._str_()
 
     
     def creatingSongsSpectrogram(self):
@@ -101,25 +120,48 @@ class Ui_MainWindow( QDialog):
             if len(data1)>60*sampleRate:
                 data1=data1[0:60*sampleRate]
             self.data.append(data1)    
-            frequency,time,spectro= spectrogram(data1,sampleRate)
-            self.spectograms.append(spectro)
+            frequence,time,specgram=spectrogram(data1,sampleRate)
+            self.spectograms.append(specgram)
+            # librosa.display.specshow(specgram)
+            # plt.savefig('./Spectrogram/F1_Song1'+str(song).zfill(3) +'.png')
+            # image=Image.open('./Spectrogram/F1_Song1'+str(song).zfill(3) +'.png')
+            # specHashed=imagehash.phash(image)
+            self.spectroHashList.append(self.Hash(specgram))
+            print('specHash',self.spectroHashList)
+            # self.spectroHashList.append(self.Hash(specgram.astype('float16')))
+    
 
     def extractFeatures(self):
-        for i in range(len(self.SampleRateList)):
-            features=[librosa.feature.melspectrogram(y=self.data[i],S=self.spectograms[i],sr=self.SampleRateList[i],window='hann'), librosa.feature.mfcc(y=self.data[i].astype('float64'),sr=self.SampleRateList[i]),librosa.feature.chroma_stft(y=self.data[i],S=self.spectograms[i],sr=self.SampleRateList[i],window='hann')]                   
-            self.featuresList.append(features)
-            features=[]
-        print('features ',self.featuresList)
-        return 0
+        #  for i in range(len(self.data)):
+            # # filename = librosa.util.example_audio_file()
+            self.data_dir='./Songs_wav/'
+            self.SpectroGram=glob(self.data_dir+'*.wav')
+            for i in range(len(self.SpectroGram)):
+                data,sample_rate=librosa.load(str(self.SpectroGram[i]),duration=60.0)
+                feature=librosa.feature.mfcc(y=data.astype('float64'),sr=sample_rate)
+                # librosa.display.specshow(feature)
+                # plt.savefig('./Feature1/F1_Song1'+str(i).zfill(3) +'.png')
+                # file='./Feature1/F1_Song1'+str(i).zfill(3) +'.png'
+                # image=Image.open(file)
+                # FeaturedHashed=imagehash.phash(image)
+                self.featureHashList1.append(self.Hash(feature))
+                feature=[]
+                print('feature ',self.featureHashList1)
+            # features=[librosa.feature.melspectrogram(y=self.data[i],sr=self.SampleRateList[i],S=self.spectograms[i]), 
+            # librosa.feature.mfcc(y=self.data[i].astype('float64'),sr=self.SampleRateList[i]),
+            # librosa.feature.chroma_stft(y=self.data[i],sr=self.SampleRateList[i],S=self.spectograms[i])]                   
+            # self.featuresList.append(features)
+            # features=[]
+        # print('features ',self.featuresList)
+  
 
-    #def hashingFunction(self):
 
     def reading_and_hashing(self):
         self.creatingSongsSpectrogram()
-        print('1')
+        print('Finished Spectro Function')
 
         self.extractFeatures()
-        print('2')
+        print('Finished Feature Function')
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
