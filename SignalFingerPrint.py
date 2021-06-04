@@ -41,7 +41,7 @@ class Ui_MainWindow( QDialog):
         self.inserted_song_2_sample_rate=''
         self.inserted_song_hash1=0
         self.inserted_song_hash2=0
-        self.filePath='./Songs/Songs'
+        self.filePath='./Songs_wav'
         self.comparison_difference=[]
         self.comparison_difference_mixer=[]
         self.similiraties = []
@@ -73,7 +73,7 @@ class Ui_MainWindow( QDialog):
         self.Song2_Percentage.setOrientation(QtCore.Qt.Horizontal)
         self.Song2_Percentage.setObjectName("Song2_Percentage")
         self.tableWidget = QtWidgets.QTableWidget(self.centralwidget)
-        self.tableWidget.setGeometry(QtCore.QRect(120, 130, 401, 201))
+        self.tableWidget.setGeometry(QtCore.QRect(30, 140, 600, 201))
         self.tableWidget.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.tableWidget.setRowCount(10)
         self.tableWidget.setObjectName("tableWidget")
@@ -83,6 +83,8 @@ class Ui_MainWindow( QDialog):
         self.tableWidget.horizontalHeader().setVisible(True)
         self.tableWidget.horizontalHeader().setCascadingSectionResizes(True)
         self.tableWidget.horizontalHeader().setDefaultSectionSize(350)
+        self.tableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        self.tableWidget.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
         self.tableWidget.verticalHeader().setVisible(True)
         self.Mix_Button = QtWidgets.QPushButton(self.centralwidget)
         self.Mix_Button.setGeometry(QtCore.QRect(540, 100, 75, 23))
@@ -114,13 +116,14 @@ class Ui_MainWindow( QDialog):
     def reading_and_hashing(self):
         #reading songs
         self.folderSongsPaths() 
-        print('Reading Songs')
+        # print('Reading Songs')
         
         self.reading_input_songs()
 # 
-        self.folder_songs_hash_spec()
-        print('Finished Hash/Spec extraction')
+        # self.folder_songs_hash_spec()
+        # print('Finished Hash/Spec extraction')
         
+        self.read_from_txt()
 
         if self.inserted_song_2 != '':
             self.mixer()
@@ -129,15 +132,14 @@ class Ui_MainWindow( QDialog):
             self.compare_similiarities()
             self.display_data()
             
-        self.hash_to_txt()
-        self.read_from_txt()
+        # self.hash_to_txt()
+        # self.read_from_txt()
         self.restart()
         
     #file iteration
     def folderSongsPaths(self):
         for song in os.listdir(self.filePath):
             self.listSongsPaths.append(os.path.join(self.filePath,song))
-        # print(self.listSongsPaths)
         return 0
     
     def reading_input_songs(self):
@@ -164,7 +166,7 @@ class Ui_MainWindow( QDialog):
             Xdb = librosa.amplitude_to_db(abs(X))
             plt.figure(figsize=(14, 5))
             librosa.display.specshow(Xdb, sr=sample_rate, x_axis='time', y_axis='hz') 
-            #If to pring log of frequencies  
+            # If to pring log of frequencies  
             librosa.display.specshow(Xdb, sr=sample_rate, x_axis='time', y_axis='log')
             plt.colorbar()
             plt.savefig('./Spectrogram1/F1_Song1_'+str(count).zfill(3) +'.png')
@@ -185,14 +187,11 @@ class Ui_MainWindow( QDialog):
         for song_number in range(len(self.listSongsPaths)):
             self.comparison_difference.append(hex_to_hash(self.inserted_song_hash1) - hex_to_hash(self.full_songs_hash[song_number]))
             self.similiraties.append((1 - self.maps(self.comparison_difference[song_number], 0, 255, 0, 1) )* 100)
-        
-        # for song in range(len(self.listSongsPaths)):
-        #     print(self.listSongsPaths[song], ':', self.similiraties[song])
+
 
     def mixer(self):
         
         sliderRatio = self.Song2_Percentage.value()/100
-        print(sliderRatio)
         self.outputSong = self.inserted_song_1_data * sliderRatio + self.inserted_song_2_data * (1-sliderRatio)
         mfccs = librosa.feature.mfcc(self.outputSong, sr=self.inserted_song_1_sample_rate)
         
@@ -200,32 +199,28 @@ class Ui_MainWindow( QDialog):
         for song_number in range(len(self.listSongsPaths)):
             self.comparison_difference_mixer.append(hex_to_hash(out) - hex_to_hash(self.full_songs_hash[song_number]))
             self.similiraties_mixer.append((1 - self.maps(self.comparison_difference_mixer[song_number], 0, 255, 0, 1) )* 100)
-
-        # for song in range(len(self.listSongsPaths)):
-        #     print(self.listSongsPaths[song], ':', self.similiraties_mixer[song])
         
         self.displayed_mix_index, self.displayed_mix_path = zip(*sorted(zip(self.similiraties_mixer, self.listSongsPaths), reverse=True))
 
-        for song in range(len(self.listSongsPaths)):
-            print(self.displayed_mix_path[song], ':', self.displayed_mix_index[song])
         
         
     def hash_to_txt(self):
         
         number = 0
-        for hash in range(len(self.full_songs_hash)):
+        for hash in range(len(self.listSongsPaths)):
             
             f = open('hashes/'+os.path.splitext(os.path.basename(self.listSongsPaths[number]))[0]+'.txt','w')
             f.write(str(self.full_songs_hash[hash]))
-            f.close()
             number +=1
+        f.close()
+
             
             
     def read_from_txt(self):
-        print(self.full_songs_hash)
         for filename in os.listdir('hashes'):
-            f = open('hashes/'+ filename,'r')  
-            print(f.read())      
+            f = open('hashes/'+ filename,'r') 
+            self.full_songs_hash.append(f.read())  
+        f.close()    
                 
     def restart(self):
         self.comparison_difference.clear()
@@ -234,10 +229,7 @@ class Ui_MainWindow( QDialog):
         self.similiraties_mixer.clear()
         self.listSongsPaths.clear()
         self.full_songs_hash.clear()
-        self.displayed_mix_index.clear()
-        self.displayed_mix_path.clear()
-        # self.displayed_index.clear()
-        # self.displayed_path.clear()
+
     def Hash(self,data):
         image=Image.fromarray(data)
         return imagehash.phash(image, hash_size=16).__str__()
@@ -268,12 +260,7 @@ class Ui_MainWindow( QDialog):
         for r in range(row):
             for c in range(column):
                 self.tableWidget.setItem(r ,c ,QtWidgets.QTableWidgetItem(GUITable[r][c]))
-     
-    # for song in range(len( self.listSongsPaths)):
-    #         self.comparison_difference.append(hex_to_hash(self.inserted_song_hash) - hex_to_hash(self.featureHashList1[song]))
-    #         self.similiraties.append([ntpath.basename(self.listSongsPaths[song]),(1 - self.maps(self.comparison_difference[song], 0, 255, 0, 1) )* 100])
-    #  print('song name: ',ntpath.basename(self.listSongsPaths[song]))
-    
+
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
