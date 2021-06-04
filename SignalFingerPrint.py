@@ -41,7 +41,7 @@ class Ui_MainWindow( QDialog):
         self.inserted_song_2_sample_rate=''
         self.inserted_song_hash1=0
         self.inserted_song_hash2=0
-        self.filePath='./Songs_wav'
+        self.filePath='./Songs/Songs'
         self.comparison_difference=[]
         self.comparison_difference_mixer=[]
         self.similiraties = []
@@ -137,6 +137,7 @@ class Ui_MainWindow( QDialog):
     def folderSongsPaths(self):
         for song in os.listdir(self.filePath):
             self.listSongsPaths.append(os.path.join(self.filePath,song))
+        # print(self.listSongsPaths)
         return 0
     
     def reading_input_songs(self):
